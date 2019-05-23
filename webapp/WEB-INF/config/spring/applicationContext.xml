@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+http://www.springframework.org/schema/beans/spring-beans.xsd 
+http://www.springframework.org/schema/context 
+http://www.springframework.org/schema/context/spring-context.xsd 
+http://www.springframework.org/schema/mvc 
+http://www.springframework.org/schema/mvc/spring-mvc.xsd 
+http://www.springframework.org/schema/aop 
+http://www.springframework.org/schema/aop/spring-aop.xsd 
+http://www.springframework.org/schema/tx 
+http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+	<!-- 本配置文件是提供全局的相关的Spring配置 -->
+
+	<!-- 包扫描与资源管理 -->
+	<!-- 用于激活Spring MVC注释扫描功能，允许使用@Controller和@RequestMapping等注释 -->
+	<context:component-scan
+		base-package="org.xzqtsg.webapp_core">
+		<context:exclude-filter type="annotation"
+			expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+
+	<!-- 声明自动为spring容器中那些配置@aspectJ切面的bean创建代理，织入切面 -->
+	<!-- 开启AOP监听 只对当前配置文件有效 -->
+	<aop:aspectj-autoproxy expose-proxy="true" />
+
+	<!--启用Spring基于annotation的DI，使用户可以在SpringMVC中使用Spring的强大功能 -->
+	<!-- 激活@Required @Autowired,JSR 250's @PostConstruct, @PreDestroy and @Resource等标注 -->
+	<!-- 一般开启了上面的<context:component-scan />，下面这个就默认开启了，不需要单独去设置了 -->
+	<!-- <context:annotation-config /> -->
+
+	<!-- 引入外部属性文件 -->
+	<context:property-placeholder
+		location="classpath:/config/jdbc.properties" />
+	<!-- 配置连接池 -->
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName"
+			value="${jdbc.driverClassName}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+	</bean>
+
+	<!-- 配置hibernate的相关属性 -->
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate5.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 配置hibernate属性 -->
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQL5Dialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.format_sql">true</prop>
+				<!-- 有表自动更新表结构，没有就创建表 -->
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+				<prop key="hibernate.cache.use_second_level_cache">false</prop>
+				<prop key="hibernate.cache.use_query_cache">false</prop>
+				<!-- 使用getCurrentSession方式打开会话 -->
+				<prop key="current_session_context_class">thread</prop>
+				<!-- 这里表示使用spring的session，而不是用hibernate的 -->
+				<prop key="hibernate.current_session_context_class">org.springframework.orm.hibernate5.SpringSessionContext
+				</prop>
+			</props>
+		</property>
+
+		<!-- 这里定义扫描哪些包，两个点表示忽略webapp_core目录和entity目录之间的目录 -->
+		<property name="packagesToScan">
+			<list>
+				<value>org.xzqtsg.webapp_core.domain</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- 事务管理相关配置 -->
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate5.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<!-- tx就是transaction的缩写，定义通知 -->
+	<tx:advice id="txAdvice"
+		transaction-manager="transactionManager">
+		<tx:attributes>
+			<tx:method name="get*" read-only="true"
+				propagation="REQUIRED" />
+			<tx:method name="list*" read-only="true"
+				propagation="REQUIRED" />
+			<tx:method name="find*" read-only="true"
+				propagation="REQUIRED" />
+			<tx:method name="*" propagation="REQUIRED"
+				rollback-for="Exception" />
+		</tx:attributes>
+	</tx:advice>
+
+	<!-- <aop:config />用于配置哪些类的哪些方法参与事务 -->
+	<!-- 其中proxy-target-class=true表示使用CGLIB代理和@AspectJ自动代理支持 -->
+	<!-- 第一个 * —— 通配 任意返回值类型 -->
+	<!-- 第二个 * —— 通配 包org.xzqtsg.webapp_core.service下的任意class -->
+	<!-- 第三个 * —— 通配 包org.xzqtsg.webapp_core.service下的任意class的任意方法 -->
+	<!-- 第四个 .. —— 通配 方法可以有0个或多个参数 -->
+	<!-- 综上：包org.xzqtsg.webapp_core.service下的任意class的具有任意返回值类型、任意数目参数和任意名称的方法 -->
+	<aop:config proxy-target-class="true">
+		<aop:advisor
+			pointcut="execution(public * org.xzqtsg.*.service.*Service.*(..))"
+			advice-ref="txAdvice" />
+	</aop:config>
+
+</beans>

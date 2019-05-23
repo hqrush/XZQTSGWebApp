@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+http://www.springframework.org/schema/beans/spring-beans.xsd 
+http://www.springframework.org/schema/context 
+http://www.springframework.org/schema/context/spring-context.xsd 
+http://www.springframework.org/schema/mvc 
+http://www.springframework.org/schema/mvc/spring-mvc.xsd 
+http://www.springframework.org/schema/aop 
+http://www.springframework.org/schema/aop/spring-aop.xsd 
+http://www.springframework.org/schema/tx 
+http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+	<!-- 本配置文件是为mvc-dispatcher的mvc-dispatcher-servlet.xml使用，提供其相关的Spring MVC配置 -->
+	<!--DispatcherServlet上下文，只管理@Controller类型的bean，忽略其他型的bean，如@Service -->
+	<!--<context:component-scan base-package="org.xzqtsg.webapp_core"> -->
+	<!--<context:include-filter type="annotation" -->
+	<!--expression="org.springframework.stereotype.Controller" /> -->
+	<!--</context:component-scan> -->
+
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix" value="/views/" />
+		<property name="suffix" value=".jsp"></property>
+	</bean>
+
+	<!--静态资源处理 css、js、images -->
+	<mvc:resources mapping="/resources/**"
+		location="/resources/" />
+	<mvc:resources mapping="/images/**" location="/images/" />
+	<mvc:resources mapping="/js/**" location="/js/" />
+	<mvc:resources mapping="/css/**" location="/css/" />
+
+	<!-- <mvc:interceptors> -->
+	<!-- <mvc:interceptor> -->
+	<!-- <mvc:mapping path="/**" /> -->
+	<!-- <mvc:exclude-mapping path="/images/**" /> -->
+	<!-- <bean -->
+	<!-- class="org.xzqtsg.webapp_core.interceptor.LoginInterceptor" /> -->
+	<!-- </mvc:interceptor> -->
+	<!-- </mvc:interceptors> -->
+
+	<!-- 下面这部分处理Http请求映射 -->
+	<!--<bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping" 
+		/> -->
+
+	<!-- <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"> -->
+	<!-- <property name="cacheSeconds" value="0"></property> -->
+	<!-- <property name="messageConverters"> -->
+	<!-- <list> -->
+	<!-- <ref bean="mappingJacksonHttpMessageConverter" /> -->
+	<!-- <ref bean="mappingStringHttpMessageConverter" /> -->
+	<!-- </list> -->
+	<!-- </property> -->
+	<!-- <property name="webBindingInitializer" ref="webBindingInitializer"></property> -->
+	<!-- </bean> -->
+
+	<bean id="mappingStringHttpMessageConverter"
+		class="org.springframework.http.converter.StringHttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>text/plain;charset=UTF-8</value>
+				<value>application/json;charset=UTF-8</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="mappingJacksonHttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<bean class="org.springframework.http.MediaType">
+					<constructor-arg index="0" value="application" />
+					<constructor-arg index="1" value="json" />
+					<constructor-arg index="2" value="UTF-8" />
+				</bean>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="webBindingInitializer"
+		class="org.springframework.web.bind.support.ConfigurableWebBindingInitializer">
+		<property name="conversionService">
+			<bean
+				class="org.springframework.core.convert.support.DefaultConversionService" />
+		</property>
+	</bean>
+
+	<!-- 静态资源交给默认的Servlet -->
+	<mvc:default-servlet-handler />
+
+	<!-- 使用 mvc:annotation-driven代替上边注解映射器和注解适配器配置 -->
+	<!-- mvc:annotation-driven默认加载很多的参数绑定方法， 比如json转换解析器就默认加载了 -->
+	<!-- 如果使用mvc:annotation-driven，就不用配置上边的RequestMappingHandlerMapping和RequestMappingHandlerAdapter -->
+	<!-- 实际开发时使用mvc:annotation-driven -->
+	<!-- HandlerMapping无需配置，Spring MVC可以默认启动 DefaultAnnotationHandlerMapping -->
+	<!-- 扩充了注解驱动，可以将请求参数绑定到控制器参数 -->
+	<mvc:annotation-driven />
+
+	<!-- 下面这部分处理视图 配置ViewResolver可以用多个ViewResolver使用order属性排序，InternalResourceViewResolver放在最后
+	URI为http://localhost:8080/hello的链接地址的逻辑视图将委托给位于/WEB-INF/jsps/helloworld.jsp这个视图来实现。
+	<bean
+		class="org.springframework.web.servlet.view.ContentNegotiatingViewResolver">
+		<property name="contentNegotiationManager"
+			ref="contentNegotiationManager" />
+		<property name="viewResolvers">
+			<list>
+				<bean
+					class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+					<property name="viewClass"
+						value="org.springframework.web.servlet.view.JstlView" />
+					<property name="prefix" value="/WEB-INF/views/" />
+					<property name="suffix" value=".jsp"></property>
+				</bean>
+			</list>
+		</property>
+		<property name="defaultViews">
+			<list>
+				<bean
+					class="org.springframework.web.servlet.view.json.MappingJackson2JsonView" />
+				  xml 视图解析 <bean class="org.springframework.web.servlet.view.xml.MarshallingView"> 
+					<property name="marshaller"> <bean class="org.springframework.oxm.xstream.XStreamMarshaller" 
+					/> </property> </bean>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="contentNegotiationManager"
+		class="org.springframework.web.accept.ContentNegotiationManagerFactoryBean">
+		根据请求参数或拓展名映射到相应的MIME类型
+		<property name="mediaTypes">
+			<map>
+				<entry key="json" value="application/json" />
+				<entry key="xml" value="application/xml" />
+			</map>
+		</property>
+		设置默认的MIME类型，如果没有指定拓展名或请求参数，则使用此默认MIME类型解析视图
+		<property name="defaultContentType" value="text/html" />
+		是否不适用请求头确定MIME类型 
+		<property name="ignoreAcceptHeader" value="true" />
+		是否根据路径拓展名确定MIME类型
+		<property name="favorPathExtension" value="true" />
+		是否使用参数来确定MIME类型
+		<property name="favorParameter" value="false" />
+	</bean>
+	
+	这里是设置FreeMarker相关配置 <bean id="freemarkerConfig" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer"> 
+		<property name="templateLoaderPath" value="/WEB-INF/views/" /> <property 
+		name="freemarkerSettings"> <props> <prop key="template_update_delay">0</prop> 
+		<prop key="default_encoding">UTF-8</prop> <prop key="number_format">0.##########</prop> 
+		<prop key="datetime_format">yyyy-MM-dd HH:mm:ss</prop> <prop key="classic_compatible">true</prop> 
+		<prop key="template_exception_handler">ignore</prop> </props> </property> 
+		</bean>
+	设置上传附件的大小限制 <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver"> 
+		<property name="maxUploadSize" value="104857600" /> </bean> -->
+</beans>
